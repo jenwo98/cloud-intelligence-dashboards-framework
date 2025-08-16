@@ -391,6 +391,7 @@ class Cid():
     def get_template_parameters(self, parameters: dict, param_prefix: str='', others: dict=None):
         """ Get template parameters. """
         params = get_parameters()
+        others = others or {}
         for key, value in parameters.items():
             logger.debug(f'reading template parameter: {key} / {value}')
             prefix = '' if value.get('global') else param_prefix
