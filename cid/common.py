@@ -1625,7 +1625,7 @@ class Cid():
             except (KeyError, TypeError, AttributeError):
                 tags_type = None
             try:
-                param_res_tag =  self.resources['views'][dep_view_name]['parameters']['resource-tags']
+                param_res_tag =  self.resources['views'][dep_view_name]['parameters']['resource_tags']
             except (KeyError, TypeError, AttributeError):
                 param_res_tag = None
             if tags_type == 'json' or param_res_tag:
