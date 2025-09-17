@@ -281,36 +281,6 @@ class Cid():
     def export(self, **kwargs):
         export_analysis(self.qs, self.athena, glue=self.glue)
 
-    def track(self, action, dashboard_id):
-        """ Send dashboard_id and account_id to CID adoption tracker """
-        method = {'created':'PUT', 'updated':'PATCH', 'deleted': 'DELETE'}.get(action, None)
-        if not method:
-            logger.debug(f"This will not fail the deployment. Logging action {action} is not supported. This issue will be ignored")
-            return
-        endpoint = 'https://okakvoavfg.execute-api.eu-west-1.amazonaws.com/' # AWS Managed
-        if os.environ.get('AWS_DEPLOYMENT_TYPE'):
-            deployment_type = os.environ.get('AWS_DEPLOYMENT_TYPE')
-        elif os.environ.get('AWS_EXECUTION_ENV', '').startswith('AWS_Lambda'):
-            deployment_type = 'Lambda'
-        else:
-            deployment_type = 'CID'
-        payload = {
-            'dashboard_id': dashboard_id,
-            'account_id': self.base.account_id,
-            action + '_via': deployment_type,
-        }
-        try:
-            res = requests.request(
-                method=method,
-                url=endpoint,
-                data=json.dumps(payload),
-                headers={'Content-Type': 'application/json'}
-            )
-            if res.status_code != 200:
-                logger.debug(f"This will not fail the deployment. There has been an issue logging action {action}  for dashboard {dashboard_id} and account {self.base.account_id}, server did not respond with a 200 response,actual  status: {res.status_code}, response data {res.text}. This issue will be ignored")
-        except Exception as e:
-            logger.debug(f"Issue logging action {action}  for dashboard {dashboard_id} , due to a urllib3 exception {str(e)} . This issue will be ignored")
-
     def get_page(self, source):
         resp = requests.get(source, timeout=10, headers={'User-Agent': 'cid'})
         resp.raise_for_status()
@@ -722,7 +692,6 @@ class Cid():
         try:
             dashboard = self.qs.create_dashboard(dashboard_definition)
             print(f"\n#######\n####### Congratulations!\n####### {dashboard_definition.get('name')} is available at: {_url}\n#######")
-            self.track('created', dashboard_id)
         except self.qs.client.exceptions.ResourceExistsException:
             print('error, already exists')
             print(f"#######\n####### {dashboard_definition.get('name')} is available at: {_url}\n#######")
@@ -855,7 +824,6 @@ class Cid():
             cid_print('Deleting dashboard')
             self.qs.delete_dashboard(dashboard_id=dashboard_id)
             cid_print(f'Dashboard {dashboard_id} deleted')
-            self.track('deleted', dashboard_id)
         except self.qs.client.exceptions.ResourceNotFoundException:
             cid_print('not found')
         except Exception as e:
@@ -1196,7 +1164,6 @@ class Cid():
             self.qs.update_dashboard(dashboard, dashboard_definition)
             print('Update completed\n')
             dashboard.display_url(self.qs_url, launch=True, **self.qs_url_params)
-            self.track('updated', dashboard_id)
         except Exception as exc:
             # Catch exception and dump a reason
             logger.debug(exc, exc_info=True)
